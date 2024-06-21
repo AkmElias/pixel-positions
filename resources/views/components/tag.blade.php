@@ -1,1 +1,15 @@
-<a href="" class="bg-white/10 hover:bg-white/25 px-2 py-1 rounded-xl text-xs transition-colors duration-300">Tag</a>
+@props(['size' => 'base'])
+
+@php
+    $classes = 'bg-white/10 hover:bg-white/25 rounded-xl font-bold transition-colors duration-300';
+
+    if ($size === 'base') {
+        $classes .= ' text-sm px-5 py-1';
+    }
+
+    if($size === 'small') {
+        $classes .= ' text-2xs px-3 py-1';
+    }
+@endphp
+
+<a href="" {{$attributes(['class' => $classes])}}>{{$slot}}</a>
