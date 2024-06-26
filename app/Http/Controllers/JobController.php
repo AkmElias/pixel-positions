@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreJobRequest;
-use App\Http\Requests\UpdateJobRequest;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Arr;
 use App\Models\Job;
 use App\Models\Tag;
+use Illuminate\Support\Facades\Auth;
+
 
 class JobController extends Controller
 {
@@ -14,7 +17,11 @@ class JobController extends Controller
      */
     public function index()
     {
-        $jobs = Job::all()->groupBy('featured');
+        $jobs = Job::query()
+            ->latest()
+            ->with(['employer', 'tags'])
+            ->get()
+            ->groupBy('featured');
 
         return view('jobs.index', [
             'featuredJobs' => $jobs[1],
@@ -28,46 +35,34 @@ class JobController extends Controller
      */
     public function create()
     {
-        //
+        return view('jobs.create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreJobRequest $request)
+    public function store(Request $request)
     {
-        //
-    }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Job $job)
-    {
-        //
-    }
+        $jobAttributes = $request->validate([
+            'title' => ['required', 'max:255'],
+            'salary' => ['required'],
+            'location' => ['required'],
+            'schedule' => ['required'],
+            'url' => ['required', 'url'],
+            'tags' => ['nullable'],
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Job $job)
-    {
-        //
-    }
+        $jobAttributes['featured'] = $request->has('featured');
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateJobRequest $request, Job $job)
-    {
-        //
-    }
+        $job = Auth::user()->employer->jobs()->create(Arr::except($jobAttributes, 'tags'));
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Job $job)
-    {
-        //
+        if ($jobAttributes['tags'] ?? false) {
+           foreach(explode(',', $jobAttributes['tags']) as $tag) {
+               $job->tag($tag);
+           }
+        }
+
+        return redirect('/');
     }
 }
